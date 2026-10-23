@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: book-catalog
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: DB_MODE
+        value: cloud          # disco do Render free é efêmero: use PostgreSQL
+      - key: DATABASE_URL
+        sync: false           # cole a string de conexão (Neon/Supabase/Render Postgres)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOW_REGISTER
+        value: "true"

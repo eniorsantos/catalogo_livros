@@ -1,0 +1,50 @@
+# Catálogo de Livros v2
+
+Node.js + Express · SQLite (local) e/ou PostgreSQL (nuvem) · frontend em HTML/JS puro.
+
+## Rodando localmente
+```bash
+npm install && cp .env.example .env && npm start   # http://localhost:3000
+```
+Crie sua conta na tela inicial. O **primeiro usuário herda** os livros criados na v1. Depois, defina `ALLOW_REGISTER=false` para fechar o cadastro.
+
+## Recursos
+- **Auth**: e-mail + senha (bcrypt), sessão em cookie httpOnly (JWT, 7 dias), rate limit no login. Cada usuário vê só seus livros.
+- **Capa**: upload redimensionado no navegador (400px, JPEG) e guardado no próprio banco, então funciona em qualquer deploy e sincroniza.
+- **ISBN**: botão "Buscar" preenche título, autor, ano, gênero e capa pela Open Library.
+- **Exclusão lógica**: "Excluir" move para a Lixeira (`deleted_at`); dá para restaurar ou excluir definitivamente. A exclusão lógica propaga na sincronização.
+- **Bancos** (`DB_MODE`): `local`, `cloud` ou `hybrid` (grava nos dois, lê do local, botão "Sincronizar").
+
+## Docker
+```bash
+docker build -t book-catalog .
+docker run -p 3000:3000 -v $(pwd)/data:/app/data -e JWT_SECRET=$(openssl rand -hex 32) book-catalog
+```
+
+## Deploy
+**Render** (usa `render.yaml`, PostgreSQL, pois o disco gratuito é efêmero):
+1. Suba o projeto para o GitHub → Render → *New* → *Blueprint*.
+2. Informe `DATABASE_URL` (Neon, Supabase ou Render Postgres). `JWT_SECRET` é gerado automaticamente.
+
+**Fly.io** (usa `fly.toml`, SQLite em volume persistente):
+```bash
+fly launch --no-deploy --copy-config      # ajuste o nome em fly.toml
+fly volumes create data --size 1 --region gru
+fly secrets set JWT_SECRET=$(openssl rand -hex 32)
+fly deploy
+```
+Para usar Postgres no Fly: `fly secrets set DATABASE_URL=...` e troque `DB_MODE` para `cloud` ou `hybrid`.
+
+## API (todas exigem login, exceto /auth e /health)
+| Método | Rota | Descrição |
+|---|---|---|
+| POST | `/api/auth/register` · `/login` · `/logout` | Sessão |
+| GET | `/api/books?q=&status=&trash=1` | Lista/busca (trash=1 lista a lixeira) |
+| POST/PUT | `/api/books` · `/api/books/:id` | Cria/atualiza (`cover` = data URL ou null) |
+| DELETE | `/api/books/:id` | Lixeira (`?permanent=1` exclui de vez, só da lixeira) |
+| POST | `/api/books/:id/restore` | Restaura |
+| GET | `/api/books/:id/cover` | Imagem da capa |
+| GET | `/api/isbn/:isbn` | Consulta Open Library |
+| POST | `/api/sync` | Sincroniza (modo hybrid) |
+
+Especificação completa do projeto: veja [SPEC.md](SPEC.md).

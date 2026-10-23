@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estante · Catálogo de livros</title>
+<style>
+:root{--bg:#f4efe6;--card:#fffdf8;--ink:#2b2118;--muted:#7a6b5b;--line:#e3d9c8;--accent:#9a3b1f;--on:#fff;--ok:#3f6b3a;--warn:#a8741a;--danger:#b3261e;--serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;--r:12px}
+@media(prefers-color-scheme:dark){:root{--bg:#17130f;--card:#211b15;--ink:#f1e8da;--muted:#a89886;--line:#33291f;--accent:#e07a54;--on:#1b130e;--ok:#8fc088;--warn:#e0b45a;--danger:#f2877f}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+h1,h2,h3,.serif{font-family:var(--serif);font-weight:600;letter-spacing:-.01em}
+input,select,textarea,button{font:inherit;color:var(--ink)}
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--on)}
+button.ghost{border-color:transparent;background:none;color:var(--muted)}button.danger{color:var(--danger)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:22px 0}
+.brand{display:flex;align-items:center;gap:10px;font-size:26px}.brand i{width:12px;height:30px;background:var(--accent);border-radius:2px;box-shadow:16px 4px 0 -2px var(--muted),30px 8px 0 -4px var(--line)}
+.brand b{margin-left:30px}
+.badge{font:12px system-ui;color:var(--muted);border:1px solid var(--line);padding:2px 10px;border-radius:99px;margin-left:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.stat b{display:block;font:600 30px/1.1 var(--serif)}.stat span{font-size:13px;color:var(--muted)}
+.tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:22px}
+.tools .s{flex:1;min-width:220px;position:relative}.tools .s svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.tools input{padding-left:38px;border-radius:99px}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px}
+.seg button{border:0;background:none;border-radius:99px;padding:6px 14px;color:var(--muted)}
+.seg button.on{background:var(--accent);color:var(--on)}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:26px 20px;padding-bottom:60px}
+.bk{display:flex;flex-direction:column;gap:10px}
+.cv{position:relative;aspect-ratio:2/3;border-radius:4px 10px 10px 4px;overflow:hidden;box-shadow:0 1px 2px #0003,0 8px 18px -8px #0005;background:var(--line);transition:transform .18s}
+.bk:hover .cv{transform:translateY(-4px)}
+.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.gen{height:100%;padding:16px 14px 14px 20px;display:flex;flex-direction:column;justify-content:space-between;color:#fbf4e6;background:linear-gradient(145deg,hsl(var(--h) 40% 36%),hsl(var(--h) 44% 22%));box-shadow:inset 7px 0 0 #0003}
+.gen span{font:600 17px/1.2 var(--serif)}.gen small{font-size:12px;opacity:.85}
+.pill{position:absolute;top:8px;left:12px;font-size:11px;padding:2px 9px;border-radius:99px;background:var(--card);color:var(--ink);box-shadow:0 1px 3px #0004}
+.pill.lendo{background:var(--accent);color:var(--on)}.pill.lido{background:var(--ok);color:#fff}
+.ov{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:6px;opacity:0;transition:.15s}
+.cv:hover .ov,.cv:focus-within .ov{opacity:1}@media(hover:none){.ov{opacity:1}}
+.ov button{flex:1;font-size:12px;padding:5px 6px;box-shadow:0 1px 4px #0004}
+.bk h3{margin:0;font-size:16px;line-height:1.25}.meta{font-size:13px;color:var(--muted);margin:0}.stars{color:var(--warn);letter-spacing:2px;font-size:13px}
+.empty{grid-column:1/-1;text-align:center;padding:70px 0;color:var(--muted)}.empty h2{color:var(--ink);margin:0 0 6px}
+dialog{border:1px solid var(--line);border-radius:18px;background:var(--bg);color:var(--ink);width:min(560px,94vw);padding:26px}
+dialog::backdrop{background:#000a}form{display:grid;gap:12px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{font-size:13px;color:var(--muted);display:grid;gap:4px}.inline{display:flex;gap:6px}.inline button{white-space:nowrap}
+.coverrow{display:flex;gap:12px;align-items:center}#prev{width:60px;height:90px;object-fit:cover;border-radius:3px 8px 8px 3px}
+#auth{max-width:400px;margin:11vh auto;padding:0 20px}
+#auth form{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px}
+#auth h1{font-size:32px;margin:0}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none}#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<section id="auth" hidden>
+  <form id="aform">
+    <h1 class="serif">Estante</h1>
+    <p class="meta" id="atitle" style="margin:0">Entre para ver seus livros</p>
+    <label>E-mail<input name="email" type="email" required autocomplete="username"></label>
+    <label>Senha<input name="password" type="password" minlength="8" required autocomplete="current-password"></label>
+    <button class="primary" id="asubmit">Entrar</button>
+    <button type="button" class="ghost" id="atoggle">Criar conta</button>
+  </form>
+</section>
+
+<div id="app" class="wrap" hidden>
+  <header>
+    <div class="brand serif"><i></i><b>Estante</b><span class="badge" id="mode">…</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="meta" id="who"></span>
+      <button id="sync" hidden>Sincronizar</button>
+      <button id="trash">Lixeira</button>
+      <button class="primary" id="new">Novo livro</button>
+      <button class="ghost" id="logout">Sair</button>
+    </div>
+  </header>
+  <section class="stats" id="stats"></section>
+  <div class="tools">
+    <div class="s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" placeholder="Buscar por título, autor ou gênero"></div>
+    <div class="seg" id="seg"></div>
+  </div>
+  <main class="shelf" id="list"></main>
+</div>
+
+<dialog id="dlg"><form id="form">
+  <h2 id="dt" style="margin:0;font-size:24px">Novo livro</h2>
+  <label>ISBN (preenche os dados via Open Library)<div class="inline"><input name="isbn" inputmode="numeric"><button type="button" id="lookup">Buscar</button></div></label>
+  <label>Título *<input name="title" required></label>
+  <label>Autor *<input name="author" required></label>
+  <div class="row"><label>Ano<input name="year" type="number"></label><label>Gênero<input name="genre"></label></div>
+  <div class="row"><label>Status<select name="status"><option value="quero_ler">Quero ler</option><option value="lendo">Lendo</option><option value="lido">Lido</option></select></label>
+    <label>Nota<select name="rating"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label></div>
+  <label>Capa<div class="coverrow"><img id="prev" hidden alt=""><input type="file" id="file" accept="image/*"><button type="button" id="rmcover" hidden>Remover</button></div></label>
+  <label>Anotações<textarea name="notes" rows="3"></textarea></label>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="ghost" id="cancel">Cancelar</button><button class="primary">Salvar</button></div>
+</form></dialog>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const LABEL = { quero_ler: 'Quero ler', lendo: 'Lendo', lido: 'Lido' };
+let ALL = [], editId = null, cover, trash = false, registering = false, status = '';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); };
+const show = ok => { $('#auth').hidden = ok; $('#app').hidden = !ok; };
+const hue = t => Math.abs([...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)) % 360;
+
+async function api(url, opt) {
+  const r = await fetch(url, opt && { headers: { 'Content-Type': 'application/json' }, ...opt });
+  if (r.status === 204) return null;
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401 && !url.startsWith('/api/auth/login')) { show(false); throw new Error(d.error || 'Faça login'); }
+  if (!r.ok) throw new Error(d.error || 'Erro');
+  return d;
+}
+
+$('#atoggle').onclick = () => {
+  registering = !registering;
+  $('#atitle').textContent = registering ? 'Crie sua conta' : 'Entre para ver seus livros';
+  $('#asubmit').textContent = registering ? 'Cadastrar' : 'Entrar';
+  $('#atoggle').textContent = registering ? 'Já tenho conta' : 'Criar conta';
+};
+$('#aform').onsubmit = async e => {
+  e.preventDefault();
+  try { const u = await api(registering ? '/api/auth/register' : '/api/auth/login', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(e.target))) }); start(u.email); }
+  catch (err) { toast(err.message); }
+};
+$('#logout').onclick = async () => { await api('/api/auth/logout', { method: 'POST' }); show(false); };
+
+async function load() { ALL = await api('/api/books?trash=' + (trash ? 1 : 0)); render(); }
+
+function render() {
+  const q = $('#q').value.trim().toLowerCase();
+  const count = s => ALL.filter(b => !s || b.status === s).length;
+  const rated = ALL.filter(b => b.rating);
+  $('#stats').hidden = trash;
+  $('#stats').innerHTML = [[ALL.length, 'Livros'], [count('lendo'), 'Lendo agora'], [count('lido'), 'Lidos'],
+    [rated.length ? (rated.reduce((a, b) => a + b.rating, 0) / rated.length).toFixed(1).replace('.', ',') : '—', 'Nota média']]
+    .map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
+  $('#seg').innerHTML = [['', 'Todos'], ['quero_ler', 'Quero ler'], ['lendo', 'Lendo'], ['lido', 'Lido']]
+    .map(([s, l]) => `<button data-s="${s}" class="${s === status ? 'on' : ''}">${l} ${count(s)}</button>`).join('');
+  const list = ALL.filter(b => (!status || b.status === status) && (!q || [b.title, b.author, b.genre].some(x => (x || '').toLowerCase().includes(q))));
+  $('#list').innerHTML = list.length ? list.map(b => `
+    <article class="bk">
+      <div class="cv">
+        ${b.has_cover ? `<img alt="Capa de ${esc(b.title)}" src="/api/books/${b.id}/cover?v=${encodeURIComponent(b.updated_at)}">`
+          : `<div class="gen" style="--h:${hue(b.title)}"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>`}
+        <span class="pill ${b.status}">${LABEL[b.status]}</span>
+        <div class="ov">${trash
+          ? `<button onclick="restore('${b.id}')">Restaurar</button><button class="danger" onclick="purge('${b.id}')">Apagar</button>`
+          : `<button onclick="edit('${b.id}')">Editar</button><button class="danger" onclick="del('${b.id}')">Excluir</button>`}</div>
+      </div>
+      <div><h3>${esc(b.title)}</h3><p class="meta">${esc(b.author)}${b.year ? ' · ' + b.year : ''}</p>
+        ${b.rating ? `<div class="stars" aria-label="Nota ${b.rating} de 5">${'★'.repeat(b.rating)}${'☆'.repeat(5 - b.rating)}</div>` : ''}</div>
+    </article>`).join('')
+    : `<div class="empty"><h2>${trash ? 'A lixeira está vazia' : ALL.length ? 'Nenhum livro encontrado' : 'Comece sua estante'}</h2>
+       <p>${trash ? 'Livros excluídos aparecem aqui até você apagá-los de vez.' : ALL.length ? 'Tente outra busca ou outro filtro.' : 'Adicione seu primeiro livro, ou importe os dados pelo ISBN.'}</p></div>`;
+}
+$('#seg').onclick = e => { if (e.target.dataset.s !== undefined) { status = e.target.dataset.s; render(); } };
+$('#q').oninput = render;
+
+const act = async (fn, msg) => { try { await fn(); toast(msg); load(); } catch (e) { toast(e.message); } };
+window.del = id => act(() => api('/api/books/' + id, { method: 'DELETE' }), 'Movido para a lixeira');
+window.restore = id => act(() => api(`/api/books/${id}/restore`, { method: 'POST' }), 'Livro restaurado');
+window.purge = id => confirm('Apagar definitivamente? Não há como desfazer.') && act(() => api(`/api/books/${id}?permanent=1`, { method: 'DELETE' }), 'Livro apagado');
+
+function setPrev(src) { $('#prev').hidden = $('#rmcover').hidden = !src; if (src) $('#prev').src = src; }
+function openForm(b) {
+  editId = b?.id || null; cover = undefined;
+  $('#dt').textContent = b ? 'Editar livro' : 'Novo livro';
+  const f = $('#form'); f.reset();
+  if (b) for (const [k, v] of Object.entries(b)) if (f.elements[k]) f.elements[k].value = v ?? '';
+  setPrev(b?.has_cover && `/api/books/${b.id}/cover?v=${encodeURIComponent(b.updated_at)}`);
+  $('#dlg').showModal();
+}
+window.edit = async id => openForm(await api('/api/books/' + id));
+
+const resize = file => new Promise(res => {
+  const img = new Image();
+  img.onload = () => {
+    const s = Math.min(1, 400 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+    c.width = img.width * s; c.height = img.height * s;
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    res(c.toDataURL('image/jpeg', .8));
+  };
+  img.src = URL.createObjectURL(file);
+});
+$('#file').onchange = async e => { if (e.target.files[0]) { cover = await resize(e.target.files[0]); setPrev(cover); } };
+$('#rmcover').onclick = () => { cover = null; $('#file').value = ''; setPrev(null); };
+$('#lookup').onclick = async () => {
+  const isbn = $('#form').elements.isbn.value;
+  if (!isbn.trim()) return toast('Digite um ISBN');
+  $('#lookup').disabled = true;
+  try {
+    const d = await api('/api/isbn/' + encodeURIComponent(isbn)), f = $('#form').elements;
+    ['isbn', 'title', 'author', 'year', 'genre'].forEach(k => { if (d[k]) f[k].value = d[k]; });
+    if (d.cover) { cover = d.cover; setPrev(cover); }
+    toast('Dados importados da Open Library');
+  } catch (e) { toast(e.message); }
+  $('#lookup').disabled = false;
+};
+$('#new').onclick = () => openForm();
+$('#cancel').onclick = () => $('#dlg').close();
+$('#form').onsubmit = async e => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  if (cover !== undefined) data.cover = cover;
+  try {
+    await api(editId ? '/api/books/' + editId : '/api/books', { method: editId ? 'PUT' : 'POST', body: JSON.stringify(data) });
+    $('#dlg').close(); toast(editId ? 'Livro atualizado' : 'Livro criado'); load();
+  } catch (err) { toast(err.message); }
+};
+$('#trash').onclick = () => { trash = !trash; status = ''; $('#trash').textContent = trash ? 'Voltar à estante' : 'Lixeira'; $('#new').hidden = trash; load(); };
+$('#sync').onclick = async () => {
+  try { const r = await api('/api/sync', { method: 'POST' }); toast(`Sincronizado: ${r.toCloud} para a nuvem, ${r.toLocal} para o local`); load(); } catch (e) { toast(e.message); }
+};
+
+async function start(email) {
+  $('#who').textContent = email; show(true);
+  const h = await (await fetch('/api/health')).json();
+  $('#mode').textContent = { local: 'SQLite local', cloud: 'PostgreSQL nuvem', hybrid: 'Híbrido local + nuvem' }[h.mode];
+  $('#sync').hidden = h.mode !== 'hybrid';
+  load();
+}
+fetch('/api/auth/me').then(r => r.ok ? r.json().then(u => start(u.email)) : show(false));
+</script>
+</body>
+</html>
