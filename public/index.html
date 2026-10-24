@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Estante · Catálogo de livros</title>
+<title>Minha Estante Virtual · Catálogo de livros</title>
 <style>
 :root{--bg:#f4efe6;--card:#fffdf8;--ink:#2b2118;--muted:#7a6b5b;--line:#e3d9c8;--accent:#9a3b1f;--on:#fff;--ok:#3f6b3a;--warn:#a8741a;--danger:#b3261e;--serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;--r:12px}
 @media(prefers-color-scheme:dark){:root{--bg:#17130f;--card:#211b15;--ink:#f1e8da;--muted:#a89886;--line:#33291f;--accent:#e07a54;--on:#1b130e;--ok:#8fc088;--warn:#e0b45a;--danger:#f2877f}}
@@ -57,7 +57,7 @@ label{font-size:13px;color:var(--muted);display:grid;gap:4px}.inline{display:fle
 <body>
 <section id="auth" hidden>
   <form id="aform">
-    <h1 class="serif">Estante</h1>
+    <h1 class="serif">Minha Estante Virtual</h1>
     <p class="meta" id="atitle" style="margin:0">Entre para ver seus livros</p>
     <label>E-mail<input name="email" type="email" required autocomplete="username"></label>
     <label>Senha<input name="password" type="password" minlength="8" required autocomplete="current-password"></label>
@@ -68,7 +68,7 @@ label{font-size:13px;color:var(--muted);display:grid;gap:4px}.inline{display:fle
 
 <div id="app" class="wrap" hidden>
   <header>
-    <div class="brand serif"><i></i><b>Estante</b><span class="badge" id="mode">…</span></div>
+    <div class="brand serif"><i></i><b>Minha Estante Virtual</b><span class="badge" id="mode">…</span></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span class="meta" id="who"></span>
       <button id="sync" hidden>Sincronizar</button>
