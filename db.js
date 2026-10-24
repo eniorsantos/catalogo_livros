@@ -30,11 +30,18 @@ function sqliteDriver(file) {
 
 function pgDriver(url) {
   const pool = new (require('pg').Pool)({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  pool.on('error', e => console.error('PG pool error:', e.message));
   const conv = (s) => { let i = 0; return s.replace(/\?/g, () => '$' + ++i); };
   return {
     name: 'cloud',
-    all: async (sql, p = []) => (await pool.query(conv(sql), p)).rows,
-    run: async (sql, p = []) => { await pool.query(conv(sql), p); },
+    all: async (sql, p = []) => {
+      console.log('PG query:', sql, p);
+      return (await pool.query(conv(sql), p)).rows;
+    },
+    run: async (sql, p = []) => {
+      console.log('PG exec:', sql, p);
+      await pool.query(conv(sql), p);
+    },
   };
 }
 
