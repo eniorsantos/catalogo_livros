@@ -1,6 +1,6 @@
 # Especificação do Projeto — Catálogo de Livros
 
-**Versão:** 2.2 · **Stack:** Node.js 18+ · Express 4 · SQLite (better-sqlite3) · PostgreSQL (pg) · HTML/CSS/JS puro
+**Versão:** 2.3 · **Stack:** Node.js 18+ · Express 4 · SQLite (better-sqlite3) · PostgreSQL (pg) · HTML/CSS/JS puro
 
 ---
 
@@ -84,6 +84,8 @@ O primeiro driver da lista é o **primário** (usado em todas as leituras). Plac
 | RF-14 | O usuário pode definir um **nome de exibição** (mín. 2 chars, máx. 100) que substitui o e-mail no cabeçalho. |
 | RF-15 | O usuário pode alterar a própria senha (exige senha atual). |
 | RF-16 | O usuário pode excluir a própria conta (apaga todos os seus livros e a conta, com dupla confirmação). |
+| RF-17 | O usuário pode **escanear código de barras (ISBN)** via câmera (Barcode Detection API) para preencher o formulário. |
+| RF-18 | O usuário pode **fotografar a capa do livro** via câmera (capture=environment) no formulário de livro. |
 
 ## 4. Requisitos não funcionais
 
@@ -248,14 +250,14 @@ Identidade visual "Estante": tons de marrom escuro e terracota, títulos em font
 1. **Login/Cadastro:** cartão centralizado com e-mail e senha e botão para alternar entre entrar e criar conta. Exibido quando `GET /auth/me` retorna 401 e sempre que qualquer chamada recebe 401.
 2. **Estante:** cabeçalho com marca (ANALIVROS), selo do modo de banco, **nome de exibição do usuário** e botões *Sincronizar* (só no modo híbrido), *Lixeira*, *Novo livro*, *Perfil* e *Sair*. Abaixo, quatro indicadores (livros, lendo agora, lidos, nota média), busca arredondada e filtro por status em controle segmentado com contagem. A grade mostra capas de proporção 2:3 com selo de status; título, autor, ano e nota ficam abaixo, e as ações *Editar* e *Excluir* aparecem sobre a capa (ao passar o mouse, ou sempre em telas de toque).
 3. **Capa gerada:** livros sem imagem recebem uma capa tipográfica com cor derivada do título (matiz calculado por hash), com título e autor.
-4. **Formulário (modal):** ISBN com botão *Buscar*, título, autor, ano, gênero, status, nota, capa e anotações.
+4. **Formulário (modal):** ISBN com botão *Buscar* (consulta Open Library), **📷 Escanear** (Barcode Detection API — lê EAN-13/EAN-8/UPC via câmera), título, autor, ano, gênero, status, nota, **capa com 📸 Foto** (abre câmera traseira via `capture=environment`), anotações.
 5. **Lixeira:** mesma grade, com ações *Restaurar* e *Apagar*; os indicadores e o botão *Novo livro* ficam ocultos.
 6. **Perfil:** acessível pelo botão *Perfil* no cabeçalho. Mostra nome de exibição, e-mail, estatísticas (total, lendo, lidos), formulário para alterar nome de exibição, formulário para alterar senha (exige senha atual) e botão para excluir conta (com dupla confirmação).
 
 ### 10.2 Comportamentos
 - A lista é carregada uma vez por visão (estante ou lixeira) e **filtrada no navegador**: busca instantânea (título, autor, gênero), filtro por status e indicadores calculados sobre todos os livros, sem chamadas extras à API.
-- **Capa:** a imagem escolhida é redimensionada no navegador (lado maior de até 400 px, JPEG com qualidade 0,8) antes do envio. O campo `cover` só é enviado se houve mudança (nova imagem ou remoção).
-- **ISBN:** o botão preenche os campos retornados e a capa; o usuário revisa e salva.
+- **Capa:** a imagem escolhida é redimensionada no navegador (lado maior de até 400 px, JPEG com qualidade 0,8) antes do envio. O campo `cover` só é enviado se houve mudança (nova imagem ou remoção). O botão **📸 Foto** abre a câmera traseira (mobile) ou webcam (desktop) via `capture=environment`.
+- **ISBN:** o botão *Buscar* preenche os campos via Open Library; o botão **📷 Escanear** usa a **Barcode Detection API** (Chrome/Edge Android) para ler EAN-13/EAN-8/UPC-A/UPC-E/Code-128 via câmera; fallback para seletor de arquivo em navegadores sem suporte.
 - Apagar definitivamente pede confirmação; mensagens de sucesso e erro aparecem em avisos temporários (*toasts*).
 - A URL da capa inclui `?v=<updated_at>` para atualizar o cache do navegador após edições.
 

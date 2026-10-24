@@ -1,4 +1,4 @@
-# Catálogo de Livros v2.2
+# Catálogo de Livros v2.3
 
 Node.js + Express · SQLite (local) e/ou PostgreSQL (nuvem) · frontend em HTML/JS puro.
 
@@ -11,8 +11,8 @@ Crie sua conta na tela inicial. O **primeiro usuário herda** os livros criados 
 ## Recursos
 - **Auth**: e-mail + senha (bcrypt), sessão em cookie httpOnly (JWT, 7 dias), rate limit no login. Cada usuário vê só seus livros.
 - **Perfil**: nome de exibição (substitui e-mail no topo), alteração de senha (exige senha atual), exclusão de conta (apaga usuário + todos os livros, com dupla confirmação).
-- **Capa**: upload redimensionado no navegador (400px, JPEG) e guardado no próprio banco, então funciona em qualquer deploy e sincroniza.
-- **ISBN**: botão "Buscar" preenche título, autor, ano, gênero e capa pela Open Library.
+- **Capa**: upload redimensionado no navegador (400px, JPEG) e guardado no próprio banco; botão **📸 Foto** abre câmera traseira (mobile) / webcam (desktop) via `capture=environment`.
+- **ISBN**: botão "Buscar" preenche dados pela Open Library; botão **📷 Escanear** lê código de barras (EAN-13/EAN-8/UPC) via **Barcode Detection API** (Chrome/Edge Android) — fallback para seletor de arquivo.
 - **Exclusão lógica**: "Excluir" move para a Lixeira (`deleted_at`); dá para restaurar ou excluir definitivamente. A exclusão lógica propaga na sincronização.
 - **Bancos** (`DB_MODE`): `local`, `cloud` ou `hybrid` (grava nos dois, lê do local, botão "Sincronizar").
 
