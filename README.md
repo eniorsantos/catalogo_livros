@@ -1,4 +1,4 @@
-# Catálogo de Livros v2
+# Catálogo de Livros v2.2
 
 Node.js + Express · SQLite (local) e/ou PostgreSQL (nuvem) · frontend em HTML/JS puro.
 
@@ -10,6 +10,7 @@ Crie sua conta na tela inicial. O **primeiro usuário herda** os livros criados 
 
 ## Recursos
 - **Auth**: e-mail + senha (bcrypt), sessão em cookie httpOnly (JWT, 7 dias), rate limit no login. Cada usuário vê só seus livros.
+- **Perfil**: nome de exibição (substitui e-mail no topo), alteração de senha (exige senha atual), exclusão de conta (apaga usuário + todos os livros, com dupla confirmação).
 - **Capa**: upload redimensionado no navegador (400px, JPEG) e guardado no próprio banco, então funciona em qualquer deploy e sincroniza.
 - **ISBN**: botão "Buscar" preenche título, autor, ano, gênero e capa pela Open Library.
 - **Exclusão lógica**: "Excluir" move para a Lixeira (`deleted_at`); dá para restaurar ou excluir definitivamente. A exclusão lógica propaga na sincronização.
@@ -39,6 +40,10 @@ Para usar Postgres no Fly: `fly secrets set DATABASE_URL=...` e troque `DB_MODE`
 | Método | Rota | Descrição |
 |---|---|---|
 | POST | `/api/auth/register` · `/login` · `/logout` | Sessão |
+| GET | `/api/auth/me` | Dados do usuário (`email`, `display_name`) |
+| PUT | `/api/auth/display-name` | Atualiza nome de exibição |
+| PUT | `/api/auth/password` | Altera senha (exige senha atual) |
+| DELETE | `/api/auth/account` | Exclui conta + todos os livros |
 | GET | `/api/books?q=&status=&trash=1` | Lista/busca (trash=1 lista a lixeira) |
 | POST/PUT | `/api/books` · `/api/books/:id` | Cria/atualiza (`cover` = data URL ou null) |
 | DELETE | `/api/books/:id` | Lixeira (`?permanent=1` exclui de vez, só da lixeira) |

@@ -1,6 +1,6 @@
 # Especificação do Projeto — Catálogo de Livros
 
-**Versão:** 2.1 · **Stack:** Node.js 18+ · Express 4 · SQLite (better-sqlite3) · PostgreSQL (pg) · HTML/CSS/JS puro
+**Versão:** 2.2 · **Stack:** Node.js 18+ · Express 4 · SQLite (better-sqlite3) · PostgreSQL (pg) · HTML/CSS/JS puro
 
 ---
 
@@ -81,6 +81,9 @@ O primeiro driver da lista é o **primário** (usado em todas as leituras). Plac
 | RF-11 | Em modo híbrido, o usuário pode disparar a sincronização entre os bancos local e nuvem. |
 | RF-12 | O administrador pode desativar novos cadastros (`ALLOW_REGISTER=false`). |
 | RF-13 | O primeiro usuário cadastrado herda livros sem dono (criados na v1). |
+| RF-14 | O usuário pode definir um **nome de exibição** (mín. 2 chars, máx. 100) que substitui o e-mail no cabeçalho. |
+| RF-15 | O usuário pode alterar a própria senha (exige senha atual). |
+| RF-16 | O usuário pode excluir a própria conta (apaga todos os seus livros e a conta, com dupla confirmação). |
 
 ## 4. Requisitos não funcionais
 
@@ -106,6 +109,7 @@ O primeiro driver da lista é o **primário** (usado em todas as leituras). Plac
 | `id` | TEXT | PK, UUID v4 |
 | `email` | TEXT | Único, obrigatório, salvo em minúsculas |
 | `password_hash` | TEXT | Obrigatório, hash bcrypt |
+| `display_name` | TEXT | Opcional; nome de exibição do usuário (máx. 100 chars) |
 | `created_at` | TEXT | ISO 8601 (UTC) |
 | `updated_at` | TEXT | ISO 8601 (UTC) |
 
@@ -151,13 +155,16 @@ O primeiro driver da lista é o **primário** (usado em todas as leituras). Plac
 
 Base: `/api`. Formato: JSON (`Content-Type: application/json`). Erros têm o formato `{ "error": "mensagem" }`. Rotas marcadas com 🔒 exigem o cookie de sessão; sem ele respondem **401**.
 
-### 7.1 Autenticação e saúde
+### 7.1 Autenticação, perfil e saúde
 | Método e rota | Corpo | Sucesso | Erros |
 |---|---|---|---|
 | `POST /auth/register` | `{ email, password }` | 201 `{ email }` + cookie | 400 dados inválidos · 403 cadastro desativado · 409 e-mail existente · 429 limite |
-| `POST /auth/login` | `{ email, password }` | 200 `{ email }` + cookie | 401 credenciais inválidas · 429 limite |
+| `POST /auth/login` | `{ email, password }` | 200 `{ email, display_name }` + cookie | 401 credenciais inválidas · 429 limite |
 | `POST /auth/logout` | — | 204 (limpa o cookie) | — |
-| `GET /auth/me` 🔒 | — | 200 `{ email }` | 401 |
+| `GET /auth/me` 🔒 | — | 200 `{ email, display_name }` | 401 |
+| `PUT /auth/display-name` 🔒 | `{ display_name }` | 200 `{ ok, display_name }` | 400 nome inválido · 401 |
+| `PUT /auth/password` 🔒 | `{ current, new }` | 200 `{ ok }` | 400 dados inválidos · 401 senha atual incorreta |
+| `DELETE /auth/account` 🔒 | — | 204 (limpa cookie, apaga usuário e livros) | 401 |
 | `GET /health` | — | 200 `{ ok, mode, databases }` | — |
 
 ### 7.2 Livros 🔒
@@ -199,11 +206,14 @@ POST /api/books
 ## 8. Autenticação e segurança
 
 - **Sessão:** ao entrar, o servidor emite um JWT (`{ id, email }`, expira em 7 dias, assinado com `JWT_SECRET`) no cookie `token` (`httpOnly`, `SameSite=Lax`, `Secure` quando `NODE_ENV=production`, 7 dias).
+- **Perfil:** o e-mail no JWT é usado para buscar o `display_name` no banco a cada `GET /auth/me`. O nome de exibição padrão (no cadastro) é o prefixo do e-mail antes do `@`.
 - **Segredo:** fora de produção, usa `dev-secret` se `JWT_SECRET` faltar. **Em produção o servidor se recusa a iniciar** sem `JWT_SECRET` ou com o valor de exemplo `troque-isto`.
 - **Proxy:** `trust proxy` = 1, para que o limitador veja o IP real atrás de Render ou Fly.
 - **CSRF:** mitigado por `SameSite=Lax` e uso exclusivo de JSON nas rotas que alteram dados; não há token CSRF.
 - **Mensagens de login:** a mesma mensagem ("Credenciais inválidas") é usada para e-mail inexistente e senha errada.
 - **Validação de capa:** só aceita data URL `jpeg/png/webp` com base64 válido e menos de 700.000 caracteres.
+- **Alteração de senha:** exige senha atual; nova senha com mínimo 8 caracteres; hash bcrypt custo 10.
+- **Exclusão de conta:** remove o usuário e **todos os seus livros** em todos os bancos ativos; limpa cookie de sessão.
 
 ---
 
@@ -234,12 +244,13 @@ Como a exclusão lógica atualiza `updated_at`, ela se propaga normalmente.
 Página única (`public/index.html`), sem build e sem dependências externas.
 
 ### 10.1 Telas
-Identidade visual "Estante": tons de papel e terracota, títulos em fonte serifada, capas em destaque. Tema claro/escuro automático.
+Identidade visual "Estante": tons de marrom escuro e terracota, títulos em fonte serifada, capas em destaque. Tema único (escuro).
 1. **Login/Cadastro:** cartão centralizado com e-mail e senha e botão para alternar entre entrar e criar conta. Exibido quando `GET /auth/me` retorna 401 e sempre que qualquer chamada recebe 401.
-2. **Estante:** cabeçalho com marca, selo do modo de banco, e-mail do usuário e botões *Sincronizar* (só no modo híbrido), *Lixeira*, *Novo livro* e *Sair*. Abaixo, quatro indicadores (livros, lendo agora, lidos, nota média), busca arredondada e filtro por status em controle segmentado com contagem. A grade mostra capas de proporção 2:3 com selo de status; título, autor, ano e nota ficam abaixo, e as ações *Editar* e *Excluir* aparecem sobre a capa (ao passar o mouse, ou sempre em telas de toque).
+2. **Estante:** cabeçalho com marca (ANALIVROS), selo do modo de banco, **nome de exibição do usuário** e botões *Sincronizar* (só no modo híbrido), *Lixeira*, *Novo livro*, *Perfil* e *Sair*. Abaixo, quatro indicadores (livros, lendo agora, lidos, nota média), busca arredondada e filtro por status em controle segmentado com contagem. A grade mostra capas de proporção 2:3 com selo de status; título, autor, ano e nota ficam abaixo, e as ações *Editar* e *Excluir* aparecem sobre a capa (ao passar o mouse, ou sempre em telas de toque).
 3. **Capa gerada:** livros sem imagem recebem uma capa tipográfica com cor derivada do título (matiz calculado por hash), com título e autor.
 4. **Formulário (modal):** ISBN com botão *Buscar*, título, autor, ano, gênero, status, nota, capa e anotações.
 5. **Lixeira:** mesma grade, com ações *Restaurar* e *Apagar*; os indicadores e o botão *Novo livro* ficam ocultos.
+6. **Perfil:** acessível pelo botão *Perfil* no cabeçalho. Mostra nome de exibição, e-mail, estatísticas (total, lendo, lidos), formulário para alterar nome de exibição, formulário para alterar senha (exige senha atual) e botão para excluir conta (com dupla confirmação).
 
 ### 10.2 Comportamentos
 - A lista é carregada uma vez por visão (estante ou lixeira) e **filtrada no navegador**: busca instantânea (título, autor, gênero), filtro por status e indicadores calculados sobre todos os livros, sem chamadas extras à API.
@@ -333,6 +344,10 @@ Os comandos passo a passo estão no `README.md`.
 9. Em produção, o servidor não inicia sem `JWT_SECRET`.
 10. Com `ALLOW_REGISTER=false`, `POST /auth/register` responde 403.
 11. Após 10 tentativas em 15 min do mesmo IP em login/cadastro, a 11ª responde 429.
+12. `GET /auth/me` retorna `{ email, display_name }`; o header mostra o `display_name` (fallback: e-mail).
+13. `PUT /auth/display-name` atualiza o nome (mín. 2 chars, máx. 100); o header atualiza na hora e persiste após reload.
+14. `PUT /auth/password` exige senha atual correta e nova senha ≥ 8 chars; login subsequente funciona com a nova senha.
+15. `DELETE /auth/account` apaga usuário e todos os seus livros; retorna 204 e limpa cookie; novo login cria conta nova.
 
 ## 15. Limitações atuais e evolução sugerida
 
@@ -346,3 +361,4 @@ Os comandos passo a passo estão no `README.md`.
 | Sincronização | Manual, last-write-wins, sem marcador de remoção definitiva | Tombstones e sincronização incremental |
 | Leitura de ISBN | Digitado | Leitor de código de barras via câmera |
 | Exportação | Não existe | Exportar/importar CSV e JSON |
+| Perfil do usuário | Implementado (nome, senha, exclusão) | Avatar, preferências de tema, exportação de dados pessoais (LGPD) |

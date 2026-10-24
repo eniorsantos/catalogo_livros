@@ -4,17 +4,18 @@ const path = require('path');
 
 const T = {
   books: ['id','user_id','title','author','isbn','year','genre','status','rating','notes','cover','created_at','updated_at','deleted_at'],
-  users: ['id','email','password_hash','created_at','updated_at'],
+  users: ['id','email','password_hash','display_name','created_at','updated_at'],
 };
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS books (
     id TEXT PRIMARY KEY, title TEXT NOT NULL, author TEXT NOT NULL, isbn TEXT, year INTEGER, genre TEXT,
     status TEXT NOT NULL DEFAULT 'quero_ler', rating INTEGER, notes TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, display_name TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
 ];
 // Migração para bancos da v1 (falha silenciosa se a coluna já existe)
 const MIGRATIONS = ['user_id', 'cover', 'deleted_at'].map(c => `ALTER TABLE books ADD COLUMN ${c} TEXT`);
+const USER_MIGRATIONS = ['display_name'].map(c => `ALTER TABLE users ADD COLUMN ${c} TEXT`);
 const LIST = 'id,title,author,isbn,year,genre,status,rating,notes,created_at,updated_at,deleted_at,(cover IS NOT NULL) AS has_cover';
 
 function sqliteDriver(file) {
@@ -30,18 +31,11 @@ function sqliteDriver(file) {
 
 function pgDriver(url) {
   const pool = new (require('pg').Pool)({ connectionString: url, ssl: { rejectUnauthorized: false } });
-  pool.on('error', e => console.error('PG pool error:', e.message));
   const conv = (s) => { let i = 0; return s.replace(/\?/g, () => '$' + ++i); };
   return {
     name: 'cloud',
-    all: async (sql, p = []) => {
-      console.log('PG query:', sql, p);
-      return (await pool.query(conv(sql), p)).rows;
-    },
-    run: async (sql, p = []) => {
-      console.log('PG exec:', sql, p);
-      await pool.query(conv(sql), p);
-    },
+    all: async (sql, p = []) => (await pool.query(conv(sql), p)).rows,
+    run: async (sql, p = []) => { await pool.query(conv(sql), p); },
   };
 }
 
@@ -56,12 +50,13 @@ const primary = drivers[0];
 const ready = Promise.all(drivers.map(async d => {
   for (const s of SCHEMA) await d.run(s);
   for (const m of MIGRATIONS) await d.run(m).catch(() => {});
+  for (const m of USER_MIGRATIONS) await d.run(m).catch(() => {});
 }));
 
 const upsert = (d, t, r) => {
   const c = T[t];
   return d.run(`INSERT INTO ${t} (${c}) VALUES (${c.map(() => '?')})
-    ON CONFLICT(id) DO UPDATE SET ${c.slice(1).map(x => `${x}=excluded.${x}`)}`, c.map(k => r[k] ?? null));
+    ON CONFLICT (id) DO UPDATE SET ${c.slice(1).map(x => `${x}=excluded.${x}`)}`, c.map(k => r[k] ?? null));
 };
 const writeAll = async (t, r) => { for (const d of drivers) await upsert(d, t, r); };
 
@@ -76,11 +71,32 @@ module.exports = {
     await ready;
     const first = Number((await primary.all('SELECT COUNT(*) AS n FROM users'))[0].n) === 0;
     const now = new Date().toISOString();
-    const user = { id: crypto.randomUUID(), email, password_hash, created_at: now, updated_at: now };
+    const displayName = email.split('@')[0];
+    const user = { id: crypto.randomUUID(), email, password_hash, display_name: displayName, created_at: now, updated_at: now };
     await writeAll('users', user);
     // o primeiro usuário herda os livros criados na v1 (sem dono)
     if (first) for (const d of drivers) await d.run('UPDATE books SET user_id = ? WHERE user_id IS NULL', [user.id]);
     return user;
+  },
+  async updateUserDisplayName(email, display_name) {
+    await ready;
+    const now = new Date().toISOString();
+    for (const d of drivers) await d.run('UPDATE users SET display_name = ?, updated_at = ? WHERE email = ?', [display_name, now, email]);
+  },
+  async updateUserPassword(email, password_hash) {
+    await ready;
+    const now = new Date().toISOString();
+    for (const d of drivers) await d.run('UPDATE users SET password_hash = ?, updated_at = ? WHERE email = ?', [password_hash, now, email]);
+  },
+  async deleteUser(email) {
+    await ready;
+    const u = await primary.all('SELECT id FROM users WHERE email = ?', [email]);
+    if (!u[0]) return;
+    const userId = u[0].id;
+    // Apaga livros do usuário em todos os drivers
+    for (const d of drivers) await d.run('DELETE FROM books WHERE user_id = ?', [userId]);
+    // Apaga usuário em todos os drivers
+    for (const d of drivers) await d.run('DELETE FROM users WHERE id = ?', [userId]);
   },
 
   // ---------- livros (sempre filtrados por usuário) ----------

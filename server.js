@@ -45,7 +45,29 @@ app.post('/api/auth/login', limit, wrap(async (req, res) => {
   setCookie(u, res); res.json({ email: u.email });
 }));
 app.post('/api/auth/logout', (_, res) => { res.clearCookie('token'); res.status(204).end(); });
-app.get('/api/auth/me', auth, (req, res) => res.json({ email: req.user.email }));
+app.get('/api/auth/me', auth, wrap(async (req, res) => {
+  const u = await db.findUser(req.user.email);
+  res.json({ email: u.email, display_name: u.display_name });
+}));
+app.put('/api/auth/display-name', auth, wrap(async (req, res) => {
+  const { display_name } = req.body || {};
+  if (!display_name || display_name.trim().length < 2) return res.status(400).json({ error: 'Nome deve ter pelo menos 2 caracteres' });
+  await db.updateUserDisplayName(req.user.email, display_name.trim().slice(0, 100));
+  res.json({ ok: true, display_name: display_name.trim() });
+}));
+app.put('/api/auth/password', auth, wrap(async (req, res) => {
+  const { current, new: newPw } = req.body || {};
+  if (!current || !newPw || newPw.length < 8) return res.status(400).json({ error: 'Senha atual e nova (mín. 8 chars) são obrigatórias' });
+  const u = await db.findUser(req.user.email);
+  if (!u || !(await bcrypt.compare(current, u.password_hash))) return res.status(401).json({ error: 'Senha atual incorreta' });
+  await db.updateUserPassword(req.user.email, await bcrypt.hash(newPw, 10));
+  res.json({ ok: true });
+}));
+app.delete('/api/auth/account', auth, wrap(async (req, res) => {
+  await db.deleteUser(req.user.email);
+  res.clearCookie('token');
+  res.status(204).end();
+}));
 app.get('/api/health', (_, res) => res.json({ ok: true, mode: db.mode, databases: db.drivers }));
 
 app.use(['/api/books', '/api/isbn', '/api/sync'], auth);

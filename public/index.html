@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Minha Estante Virtual · Catálogo de livros</title>
+<title>ANALIVROS · Catálogo de livros</title>
 <style>
 :root{--bg:#2A1B1A;--card:#3E2826;--ink:#FFFFFF;--muted:#D4B5AD;--line:#6B433E;--accent:#C0695D;--on:#FFFFFF;--ok:#7FB08A;--warn:#E0B15A;--danger:#E5584F;--serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;--r:12px}
 *{box-sizing:border-box}[hidden]{display:none!important}
@@ -56,7 +56,7 @@ label{font-size:13px;color:var(--muted);display:grid;gap:4px}.inline{display:fle
 <body>
 <section id="auth" hidden>
   <form id="aform">
-    <h1 class="serif">Minha Estante Virtual</h1>
+    <h1 class="serif">ANALIVROS</h1>
     <p class="meta" id="atitle" style="margin:0">Entre para ver seus livros</p>
     <label>E-mail<input name="email" type="email" required autocomplete="username"></label>
     <label>Senha<input name="password" type="password" minlength="8" required autocomplete="current-password"></label>
@@ -67,13 +67,14 @@ label{font-size:13px;color:var(--muted);display:grid;gap:4px}.inline{display:fle
 
 <div id="app" class="wrap" hidden>
   <header>
-    <div class="brand serif"><i></i><b>Minha Estante Virtual</b><span class="badge" id="mode">…</span></div>
+    <div class="brand serif"><i></i><b>ANALIVROS</b><span class="badge" id="mode">…</span></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span class="meta" id="who"></span>
       <button id="sync" hidden>Sincronizar</button>
       <button id="trash">Lixeira</button>
       <button class="primary" id="new">Novo livro</button>
       <button class="ghost" id="logout">Sair</button>
+      <button class="ghost" id="profile">Perfil</button>
     </div>
   </header>
   <section class="stats" id="stats"></section>
@@ -98,6 +99,49 @@ label{font-size:13px;color:var(--muted);display:grid;gap:4px}.inline{display:fle
   <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="ghost" id="cancel">Cancelar</button><button class="primary">Salvar</button></div>
 </form></dialog>
 <div id="toast"></div>
+
+<section id="profileView" class="wrap" hidden>
+  <header>
+    <div class="brand serif"><i></i><b>Perfil</b></div>
+    <button class="ghost" id="profileBack">Voltar</button>
+  </header>
+  <div style="max-width:500px;margin:0 auto">
+    <div class="stat" style="text-align:center;padding:24px">
+      <div style="font-size:48px;color:var(--accent);margin-bottom:8px">👤</div>
+      <h2 id="profileEmail" style="margin:0 0 8px"></h2>
+      <p class="meta" id="profileSince"></p>
+    </div>
+    <div style="display:grid;gap:16px;margin-top:24px">
+      <div class="stat">
+        <b id="statBooks">0</b><span>Livros na estante</span>
+      </div>
+      <div class="stat">
+        <b id="statReading">0</b><span>Lendo agora</span>
+      </div>
+      <div class="stat">
+        <b id="statRead">0</b><span>Lidos</span>
+      </div>
+    </div>
+    <hr style="border-color:var(--line);margin:24px 0">
+    <h3 style="margin:0 0 16px">Nome de exibição</h3>
+    <form id="displayNameForm" style="display:grid;gap:12px">
+      <label>Nome que aparece no topo<input name="display_name" required minlength="2" maxlength="100"></label>
+      <button class="primary" type="submit">Salvar</button>
+    </form>
+    <hr style="border-color:var(--line);margin:24px 0">
+    <h3 style="margin:0 0 16px">Alterar senha</h3>
+    <form id="pwdForm" style="display:grid;gap:12px">
+      <label>Senha atual<input name="current" type="password" required minlength="8"></label>
+      <label>Nova senha<input name="new" type="password" required minlength="8"></label>
+      <label>Confirmar nova senha<input name="confirm" type="password" required minlength="8"></label>
+      <button class="primary" type="submit">Salvar</button>
+    </form>
+    <hr style="border-color:var(--line);margin:24px 0">
+    <h3 style="margin:0 0 16px;color:var(--danger)">Zona de perigo</h3>
+    <p class="meta" style="margin-bottom:16px">Excluir sua conta remove todos os seus livros permanentemente. Esta ação não pode ser desfeita.</p>
+    <button class="danger" id="deleteAccount">Excluir minha conta</button>
+  </div>
+</section>
 
 <script>
 const $ = s => document.querySelector(s);
@@ -219,12 +263,75 @@ $('#sync').onclick = async () => {
 };
 
 async function start(email) {
-  $('#who').textContent = email; show(true);
+  const u = await (await fetch('/api/auth/me')).json();
+  const displayName = u.display_name || email;
+  $('#who').textContent = displayName; show(true);
   const h = await (await fetch('/api/health')).json();
   $('#mode').textContent = { local: 'Local', cloud: 'Nuvem', hybrid: 'Híbrido' }[h.mode];
   $('#sync').hidden = h.mode !== 'hybrid';
   load();
 }
+
+// ---------- Perfil ----------
+let currentEmail = '';
+$('#profile').onclick = async () => {
+  $('#app').hidden = true;
+  $('#profileView').hidden = false;
+  // Buscar dados do usuário
+  try {
+    const u = await api('/api/auth/me');
+    currentEmail = u.email;
+    const displayName = u.display_name || u.email;
+    $('#who').textContent = displayName;
+    $('#profileEmail').textContent = displayName;
+    $('#displayNameForm').elements.display_name.value = displayName;
+    const books = await api('/api/books?trash=0');
+    const reading = books.filter(b => b.status === 'lendo').length;
+    const read = books.filter(b => b.status === 'lido').length;
+    $('#statBooks').textContent = books.length;
+    $('#statReading').textContent = reading;
+    $('#statRead').textContent = read;
+    if (books.length) {
+      const oldest = books.reduce((a, b) => a.created_at < b.created_at ? a : b);
+      $('#profileSince').textContent = `Membro desde ${new Date(oldest.created_at).toLocaleDateString('pt-BR')}`;
+    }
+  } catch (e) { toast(e.message); }
+};
+$('#profileBack').onclick = () => {
+  $('#profileView').hidden = true;
+  $('#app').hidden = false;
+};
+$('#displayNameForm').onsubmit = async e => {
+  e.preventDefault();
+  const name = e.target.display_name.value.trim();
+  if (name.length < 2) return toast('Nome deve ter pelo menos 2 caracteres');
+  try {
+    await api('/api/auth/display-name', { method: 'PUT', body: JSON.stringify({ display_name: name }) });
+    $('#who').textContent = name;
+    $('#profileEmail').textContent = name;
+    toast('Nome atualizado');
+  } catch (e) { toast(e.message); }
+};
+$('#pwdForm').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.new.value !== f.confirm.value) return toast('As novas senhas não conferem');
+  try {
+    await api('/api/auth/password', { method: 'PUT', body: JSON.stringify({ current: f.current.value, new: f.new.value }) });
+    toast('Senha alterada com sucesso');
+    f.reset();
+  } catch (e) { toast(e.message); }
+};
+$('#deleteAccount').onclick = async () => {
+  if (!confirm('Tem certeza? Isso apagará TODOS os seus livros e sua conta. Não há como desfazer.')) return;
+  if (!confirm('Confirma definitivamente a exclusão da sua conta?')) return;
+  try {
+    await api('/api/auth/account', { method: 'DELETE' });
+    toast('Conta excluída');
+    show(false);
+  } catch (e) { toast(e.message); }
+};
+
 fetch('/api/auth/me').then(r => r.ok ? r.json().then(u => start(u.email)) : show(false));
 </script>
 </body>
