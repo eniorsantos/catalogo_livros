@@ -4,8 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Minha Estante Virtual · Catálogo de livros</title>
 <style>
-:root{--bg:#f4efe6;--card:#fffdf8;--ink:#2b2118;--muted:#7a6b5b;--line:#e3d9c8;--accent:#9a3b1f;--on:#fff;--ok:#3f6b3a;--warn:#a8741a;--danger:#b3261e;--serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;--r:12px}
-@media(prefers-color-scheme:dark){:root{--bg:#17130f;--card:#211b15;--ink:#f1e8da;--muted:#a89886;--line:#33291f;--accent:#e07a54;--on:#1b130e;--ok:#8fc088;--warn:#e0b45a;--danger:#f2877f}}
+:root{--bg:#2A1B1A;--card:#3E2826;--ink:#FFFFFF;--muted:#D4B5AD;--line:#6B433E;--accent:#C0695D;--on:#FFFFFF;--ok:#7FB08A;--warn:#E0B15A;--danger:#E5584F;--serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;--r:12px}
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
 h1,h2,h3,.serif{font-family:var(--serif);font-weight:600;letter-spacing:-.01em}
@@ -35,7 +34,7 @@ header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:s
 .cv{position:relative;aspect-ratio:2/3;border-radius:4px 10px 10px 4px;overflow:hidden;box-shadow:0 1px 2px #0003,0 8px 18px -8px #0005;background:var(--line);transition:transform .18s}
 .bk:hover .cv{transform:translateY(-4px)}
 .cv img{width:100%;height:100%;object-fit:cover;display:block}
-.gen{height:100%;padding:16px 14px 14px 20px;display:flex;flex-direction:column;justify-content:space-between;color:#fbf4e6;background:linear-gradient(145deg,hsl(var(--h) 40% 36%),hsl(var(--h) 44% 22%));box-shadow:inset 7px 0 0 #0003}
+.gen{height:100%;padding:16px 14px 14px 20px;display:flex;flex-direction:column;justify-content:space-between;color:var(--ink);background:linear-gradient(145deg,hsl(var(--h) 40% 36%),hsl(var(--h) 44% 22%));box-shadow:inset 7px 0 0 #0003}
 .gen span{font:600 17px/1.2 var(--serif)}.gen small{font-size:12px;opacity:.85}
 .pill{position:absolute;top:8px;left:12px;font-size:11px;padding:2px 9px;border-radius:99px;background:var(--card);color:var(--ink);box-shadow:0 1px 3px #0004}
 .pill.lendo{background:var(--accent);color:var(--on)}.pill.lido{background:var(--ok);color:#fff}
