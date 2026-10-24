@@ -88,13 +88,13 @@ label{font-size:13px;color:var(--muted);display:grid;gap:4px}.inline{display:fle
 
 <dialog id="dlg"><form id="form">
   <h2 id="dt" style="margin:0;font-size:24px">Novo livro</h2>
-  <label>ISBN (preenche os dados via Open Library)<div class="inline"><input name="isbn" inputmode="numeric"><button type="button" id="lookup">Buscar</button></div></label>
+  <label>ISBN (preenche os dados via Open Library)<div class="inline"><input name="isbn" inputmode="numeric"><button type="button" id="lookup">Buscar</button><button type="button" id="scanBarcode" class="ghost">📷 Escanear</button></div></label>
   <label>Título *<input name="title" required></label>
   <label>Autor *<input name="author" required></label>
   <div class="row"><label>Ano<input name="year" type="number"></label><label>Gênero<input name="genre"></label></div>
   <div class="row"><label>Status<select name="status"><option value="quero_ler">Quero ler</option><option value="lendo">Lendo</option><option value="lido">Lido</option></select></label>
     <label>Nota<select name="rating"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label></div>
-  <label>Capa<div class="coverrow"><img id="prev" hidden alt=""><input type="file" id="file" accept="image/*"><button type="button" id="rmcover" hidden>Remover</button></div></label>
+  <label>Capa<div class="coverrow"><img id="prev" hidden alt=""><input type="file" id="file" accept="image/*" capture="environment"><button type="button" id="takePhoto" class="ghost">📸 Foto</button><button type="button" id="rmcover" hidden>Remover</button></div></label>
   <label>Anotações<textarea name="notes" rows="3"></textarea></label>
   <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="ghost" id="cancel">Cancelar</button><button class="primary">Salvar</button></div>
 </form></dialog>
@@ -234,6 +234,49 @@ const resize = file => new Promise(res => {
 });
 $('#file').onchange = async e => { if (e.target.files[0]) { cover = await resize(e.target.files[0]); setPrev(cover); } };
 $('#rmcover').onclick = () => { cover = null; $('#file').value = ''; setPrev(null); };
+
+// --- Barcode scanner (ISBN) ---
+$('#scanBarcode').onclick = async () => {
+  if (!('BarcodeDetector' in window)) {
+    // Fallback: abre câmera para tirar foto do código de barras
+    return $('#file').click();
+  }
+  try {
+    $('#scanBarcode').disabled = true;
+    $('#scanBarcode').textContent = '📷 Lendo...';
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.setAttribute('playsinline', '');
+    video.style.display = 'none';
+    document.body.appendChild(video);
+    await video.play();
+    const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+    let barcode = null;
+    for (let i = 0; i < 30 && !barcode; i++) { // tenta por ~3s
+      const barcodes = await detector.detect(video);
+      if (barcodes.length) { barcode = barcodes[0].rawValue; break; }
+      await new Promise(r => setTimeout(r, 100));
+    }
+    stream.getTracks().forEach(t => t.stop());
+    video.remove();
+    if (barcode) {
+      $('#form').elements.isbn.value = barcode.replace(/[\s-]/g, '');
+      $('#lookup').click();
+    } else {
+      toast('Código de barras não detectado. Tente digitar ou fotografar a capa.');
+    }
+  } catch (e) {
+    toast('Erro ao acessar câmera: ' + e.message);
+  } finally {
+    $('#scanBarcode').disabled = false;
+    $('#scanBarcode').textContent = '📷 Escanear';
+  }
+};
+
+// --- Botão "Foto" apenas dispara o input file (já tem capture="environment") ---
+$('#takePhoto').onclick = () => $('#file').click();
+
 $('#lookup').onclick = async () => {
   const isbn = $('#form').elements.isbn.value;
   if (!isbn.trim()) return toast('Digite um ISBN');
