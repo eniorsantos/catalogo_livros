@@ -216,13 +216,13 @@ $('#form').onsubmit = async e => {
 };
 $('#trash').onclick = () => { trash = !trash; status = ''; $('#trash').textContent = trash ? 'Voltar à estante' : 'Lixeira'; $('#new').hidden = trash; load(); };
 $('#sync').onclick = async () => {
-  try { const r = await api('/api/sync', { method: 'POST' }); toast(`Sincronizado: ${r.toCloud} para a nuvem, ${r.toLocal} para o local`); load(); } catch (e) { toast(e.message); }
+  try { const r = await api('/api/sync', { method: 'POST' }); toast(`Sincronizado: ${r.toCloud} → nuvem, ${r.toLocal} → local`); load(); } catch (e) { toast(e.message); }
 };
 
 async function start(email) {
   $('#who').textContent = email; show(true);
   const h = await (await fetch('/api/health')).json();
-  $('#mode').textContent = { local: 'SQLite local', cloud: 'PostgreSQL nuvem', hybrid: 'Híbrido local + nuvem' }[h.mode];
+  $('#mode').textContent = { local: 'Local', cloud: 'Nuvem', hybrid: 'Híbrido' }[h.mode];
   $('#sync').hidden = h.mode !== 'hybrid';
   load();
 }
